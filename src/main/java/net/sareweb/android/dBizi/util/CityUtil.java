@@ -1,60 +1,91 @@
 package net.sareweb.android.dBizi.util;
 
-import java.lang.reflect.Type;
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import net.sareweb.android.dBizi.model.City;
 import net.sareweb.android.dBizi.model.Station;
+import net.sareweb.android.dBizi.util.DBiziConstants;
 
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.util.EntityUtils;
-
-import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
-
-import android.util.Log;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 
 public class CityUtil {
 
 	public static City initCity(String idioma) {
 
-		String serviceURL = composeServiceURL(idioma);
-		DefaultHttpClient httpClient = new DefaultHttpClient();
-		HttpGet httpGet = new HttpGet(serviceURL);
-		try {
-			HttpResponse response = httpClient.execute(httpGet);
-			if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
-				String result = EntityUtils.toString(response.getEntity());
+List<Station> stations = new ArrayList<>();
+		
+		String datuak = estazioDatuakLortu();
 
-				List<Station> stations = getStationsFromJson(result);
-				return new City(DBiziConstants.BDIZI_CITY_NAME, stations);
-			} else {
-				Log.e(TAG, "Not successful getting data");
-				return null;
-			}
-		} catch (Exception e) {
-			Log.e(TAG, "Error requesting data", e);
-			return null;
+		Matcher matcher = Pattern.compile("\\[([^\\]]+)").matcher(datuak);
+		List<String> estazioak = new ArrayList<>();
+		int pos = -1;
+		while (matcher.find(pos + 1)) {
+			pos = matcher.start();
+			estazioak.add(matcher.group(1));
+			System.out.println("kasu, hau da estazioa:" + matcher.group(1));
 		}
+		
+		for (int i = 1; i < estazioak.size(); i++) {
+			String balioak[] = estazioak.get(i).split(",");
+			String izena = balioak[2].replaceAll("\"", "").replace("\\u00f1",
+					"ñ");
+			// euskaratu
+			if (idioma == "eu") {
+				switch (izena) {
+				case "Ayuntamiento":
+					izena = "Udaletxea";
+					break;
+				case "Paseo Francia":
+					izena = "Frantzia ibilbidea";
+					break;
+				case "Magisterio":
+					izena = "Magisteritza";
+					break;
+				case "Av. Zarautz":
+					izena = "Zarautz etorbidea";
+					break;
+				case "Plaza Cataluña":
+					izena = "Katalunia plaza";
+					break;
+				case "Universidades":
+					izena = "Unibertsitateak";
+					break;
+				default:
+					break;
+				}
+			}
+			// stazio berria sortu
+			Station stazioa = new Station();
+			stazioa.setId(i + 9);
+			stazioa.setNombre(izena);
+			stazioa.setLatitud(Double.parseDouble(balioak[0]));
+			stazioa.setLongitud(Double.parseDouble(balioak[1]));
+			stazioa.setPlazasTotales(Integer.toString(Integer
+					.parseInt(balioak[3]) + Integer.parseInt(balioak[4])));
+			stazioa.setBicisDisponibles(balioak[4]);
+			stations.add(stazioa);//stazioa batu
+		}
+				return new City(DBiziConstants.BDIZI_CITY_NAME, stations);
 	}
 
-	private static String composeServiceURL(String idioma) {
-		return "http://" + DBiziConstants.SERVER + DBiziConstants.SERVICE + "&"
-				+ DBiziConstants.PARAM_IDIOMA + "=" + idioma;
-	}
-	
-	private static List<Station> getStationsFromJson(String json){
-		GsonBuilder gsonBuilder = new GsonBuilder();
-
-		Type collectionType = new TypeToken<Collection<Station>>() {
-		}.getType();
-		return gsonBuilder.create().fromJson(json,
-				collectionType);
+	private static String estazioDatuakLortu() {
+		Document doc = null;
+		try {
+			doc = Jsoup.connect(DBiziConstants.SERVER).get();
+		} catch (IOException e1) {
+			e1.printStackTrace();
+		}
+		Element scripta = doc.getElementsByTag("script").last()
+				.previousElementSibling();
+		String scriptdata = scripta.data();
+		String scriptdatak[] = scriptdata.split("=");
+		return scriptdatak[1];
 	}
 
 	private static String TAG = "CityUtils";

@@ -53,6 +53,27 @@
             android:textAppearance="?android:attr/textAppearanceMedium"
             android:textColor="#62748f"
             android:textSize="20sp" />
+    </LinearLayout>  
+     <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" >
+
+        <ImageView
+            android:id="@+id/imageView4"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingLeft="20dp"
+            android:src="@drawable/twitter_blue" />
+
+        <TextView
+            android:id="@+id/textView3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:text=" @utolotu"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:textColor="#62748f"
+            android:textSize="20sp" />
     </LinearLayout>
 
     <TextView
@@ -76,7 +97,7 @@
         android:textSize="30sp" />
     
     <TextView
-            android:id="@+id/textView1"
+            android:id="@+id/textView4"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"

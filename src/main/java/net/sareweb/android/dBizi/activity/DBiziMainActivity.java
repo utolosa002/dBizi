@@ -1,6 +1,7 @@
 package net.sareweb.android.dBizi.activity;
 
 import net.sareweb.android.dBizi.R;
+import net.sareweb.android.dBizi.activity.StationMapActivity_;
 import net.sareweb.android.dBizi.util.DBiziConstants;
 import net.sareweb.android.dBizi.util.LangUtil;
 import android.app.TabActivity;
@@ -51,10 +52,9 @@ public class DBiziMainActivity extends TabActivity implements
 				.setContent(StationListActivity_.intent(this).get());
 		tabHost.addTab(spec);
 
-		Intent mapIntent = new Intent().setClass(this, StationMapActivity.class);
 		spec = tabHost.newTabSpec("map")
 				.setIndicator(getString(R.string.map), res.getDrawable(R.drawable.world))
-				.setContent(mapIntent);
+				.setContent(StationMapActivity_.intent(this).get());
 		tabHost.addTab(spec);
 		
 		spec = tabHost

@@ -30,7 +30,7 @@ public class StationListActivity extends Activity {
     	}else{
             setContentView(R.layout.station_list);
             
-            dialog = ProgressDialog.show(this, "", getString(R.string.loading), true);
+        dialog = ProgressDialog.show(this, "", getString(R.string.loading), true);
 		dialog.show();
 		
         loadData();

@@ -6,25 +6,30 @@ import java.util.List;
 import net.sareweb.android.dBizi.R;
 import net.sareweb.android.dBizi.model.City;
 import net.sareweb.android.dBizi.model.Station;
-import net.sareweb.android.dBizi.overlay.StationItemizedOverlay;
-import net.sareweb.android.dBizi.overlay.StationOverlayItem;
 import net.sareweb.android.dBizi.util.CityUtil;
 import net.sareweb.android.dBizi.util.ConnectionUtil;
 import net.sareweb.android.dBizi.util.DBiziConstants;
+import android.annotation.SuppressLint;
 import android.content.SharedPreferences;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 
-import com.google.android.maps.GeoPoint;
-import com.google.android.maps.MapActivity;
-import com.google.android.maps.MapController;
-import com.google.android.maps.MapView;
-import com.google.android.maps.Overlay;
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.MapFragment;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
 
-public class StationMapActivity extends MapActivity {
+import org.androidannotations.annotations.Background;
+import org.androidannotations.annotations.EActivity;
+import org.androidannotations.annotations.UiThread;
+@EActivity
+public class StationMapActivity extends Activity {
 	
-    private static String TAG = "StationListActivity";
+    private static String TAG = "StationMapActivity";
+    private GoogleMap mMap;
 
+    @SuppressLint("NewApi")
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -32,52 +37,46 @@ public class StationMapActivity extends MapActivity {
     		setContentView(R.layout.not_connected);
     	}else{
             setContentView(R.layout.station_map);
-            
-            MapView mapView = (MapView) findViewById(R.id.mapview);
-    	    mapView.setBuiltInZoomControls(true);
-    	    MapController controller =  mapView.getController();
-    	    controller.setCenter(getDefaultGeoPoint());
-    	    controller.setZoom(DBiziConstants.BDIZI_DEFAULT_ZOOM);
-    	    
-    	    mapOverlays = mapView.getOverlays();
-    	    city = CityUtil.initCity(DBiziConstants.IDIOMA_CAS);
+
+            mMap = ((MapFragment) getFragmentManager().findFragmentById(R.id.map))
+    				.getMap();
+    		mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(DBiziConstants.BDIZI_DEFAULT_LAT,
+    				DBiziConstants.BDIZI_DEFAULT_LNG), DBiziConstants.BDIZI_DEFAULT_ZOOM));
+    		
     	    loadStationsInMap();
     	}
     }
     
-    private void loadStationsInMap(){
-		Drawable drawable = this.getResources().getDrawable(android.R.drawable.btn_star);
-	    itemizedoverlay = new StationItemizedOverlay(drawable, this);
-	 
-	    mapOverlays.clear();
-	    
-	    for (Station s : city.getStations()) {
+	@Background
+	public void loadStationsInMap() {
+		userPrefs = getSharedPreferences(DBiziConstants.USER_PREFS,
+				MODE_PRIVATE);
+		String idioma = userPrefs.getString(DBiziConstants.USER_PREFS_LANG,
+				DBiziConstants.USER_PREF_LANG_EU);
+		city = CityUtil.initCity(idioma);
+		finishedBackgroundThread(0);
+	}
 
-			Double lat = s.getLatitud() * 1000000;
-			Double lng = s.getLongitud() * 1000000;
+	@UiThread
+	void finishedBackgroundThread(int result) {
 
-			if (lat.intValue() != 0 && lng.intValue() != 0) {
-				GeoPoint point = new GeoPoint(lat.intValue(), lng.intValue());
-				StationOverlayItem overlayitem = new StationOverlayItem(point,
-						s.getNombre(), "", s);
-				itemizedoverlay.addOverlay(overlayitem);
-				mapOverlays.add(itemizedoverlay);
+		if (mMap != null) {
+			List<Station> stations = city.getStations();
+			for (int i = 0; i < stations.size(); i++) {
+				Double lat = stations.get(i).getLatitud();
+				Double lng = stations.get(i).getLongitud();
+				mMap.addMarker(new MarkerOptions()
+						.position(new LatLng(lat, lng))
+						.snippet(
+								stations.get(i).getBicisDisponibles()
+										+ " bizi / "
+										+ stations.get(i).getPlazasTotales())
+						.title(stations.get(i).getNombre()));
 			}
 		}
 	}
-    
-    private GeoPoint getDefaultGeoPoint(){
-    	return new GeoPoint(DBiziConstants.BDIZI_DEFAULT_LAT, DBiziConstants.BDIZI_DEFAULT_LNG);
-    }
-
-	@Override
-	protected boolean isRouteDisplayed() {
-		return false;
-	}
 	
 	City city;
-	List<Overlay> mapOverlays;
-	StationItemizedOverlay itemizedoverlay;
 	SharedPreferences userPrefs;
 
 }
